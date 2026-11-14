@@ -8,7 +8,6 @@ public class Bot : MonoBehaviour
     NavMeshAgent agent;
     public GameObject target;
     Drive ds;
-
     Vector3 wanderTarget = Vector3.zero;
     bool coolDown = false;
 
@@ -33,7 +32,6 @@ public class Bot : MonoBehaviour
     void Pursue()
     {
         Vector3 targetDir = target.transform.position - this.transform.position;
-
         float relativeHeading = Vector3.Angle(this.transform.forward, this.transform.TransformVector(target.transform.forward));
         float toTarget = Vector3.Angle(this.transform.forward, this.transform.TransformVector(targetDir));
 
@@ -57,13 +55,12 @@ public class Bot : MonoBehaviour
     void Wander()
     {
         float wanderRadius = 10;
-        float wanderDistance = 10;
-        float wanderJitter = 1;
+        float wanderDistance = 20;
+        float wanderJitter = 10;
 
         wanderTarget += new Vector3(Random.Range(-1.0f, 1.0f) * wanderJitter,
-                                    0,
-                                    Random.Range(-1.0f, 1.0f) * wanderJitter);
-
+                              0,
+                              Random.Range(-1.0f, 1.0f) * wanderJitter);
         wanderTarget.Normalize();
         wanderTarget *= wanderRadius;
 
@@ -81,7 +78,7 @@ public class Bot : MonoBehaviour
         for (int i = 0; i < World.Instance.GetHidingSpots().Length; i++)
         {
             Vector3 hideDir = World.Instance.GetHidingSpots()[i].transform.position - target.transform.position;
-            Vector3 hidePos = World.Instance.GetHidingSpots()[i].transform.position + hideDir.normalized * 10;
+            Vector3 hidePos = World.Instance.GetHidingSpots()[i].transform.position + hideDir.normalized * 5;
 
             if (Vector3.Distance(this.transform.position, hidePos) < dist)
             {
@@ -128,7 +125,6 @@ public class Bot : MonoBehaviour
         RaycastHit raycastInfo;
         Vector3 rayToTarget = target.transform.position - this.transform.position;
         float lookAngle = Vector3.Angle(this.transform.forward, rayToTarget);
-
         if (lookAngle < 60 && Physics.Raycast(this.transform.position, rayToTarget, out raycastInfo))
         {
             if (raycastInfo.transform.gameObject.tag == "cop")
@@ -137,7 +133,7 @@ public class Bot : MonoBehaviour
         return false;
     }
 
-    bool CanSeeMe()
+    bool TargetCanSeeMe()
     {
         Vector3 rayToTarget = this.transform.position - target.transform.position;
         float lookAngle = Vector3.Angle(target.transform.forward, rayToTarget);
@@ -147,9 +143,16 @@ public class Bot : MonoBehaviour
         return false;
     }
 
-    void BehaviourCooldown()
+    void BehaviourCoolDown()
     {
         coolDown = false;
+    }
+
+    bool TargetInRange()
+    {
+        if (Vector3.Distance(this.transform.position, target.transform.position) < 10)
+            return true;
+        return false;
     }
 
     // Update is called once per frame
@@ -157,11 +160,15 @@ public class Bot : MonoBehaviour
     {
         if (!coolDown)
         {
-            if (CanSeeTarget() && CanSeeMe())
+            if (!TargetInRange())
+            {
+                Wander();
+            }
+            else if (CanSeeTarget() && TargetCanSeeMe())
             {
                 CleverHide();
                 coolDown = true;
-                Invoke("BehaviourCooldown", 5);
+                Invoke("BehaviourCoolDown", 5);
             }
             else
             {
